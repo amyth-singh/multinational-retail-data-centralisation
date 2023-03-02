@@ -1,4 +1,3 @@
-# Create methods that help extract data from different data sources.
-
+# Extract data from multiple sources
 class DataExtractor:
     pass
