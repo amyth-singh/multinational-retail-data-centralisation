@@ -10,17 +10,9 @@ class DatabaseConnector:
         return data
 
     def init_db_engine():
-        data = DatabaseConnector.read_db_creds()
-        database_type = 'postgresql'
-        dbapi = 'psycopg2'
-        host = data['RDS_HOST']
-        password = data['RDS_PASSWORD']
-        user = data['RDS_USER']
-        database = data['RDS_DATABASE']
-        port = data['RDS_PORT']
-        engine = create_engine(f"{database_type}+{dbapi}://{user}:{password}@{host}:{port}/{database}")
-        connect = engine.connect()
-        return connect
+        read_db = DatabaseConnector.read_db_creds()
+        return create_engine(f"postgresql+psycopg2://{read_db['RDS_USER']}:{read_db['RDS_PASSWORD']}@{read_db['RDS_HOST']}:{read_db['RDS_PORT']}/{read_db['RDS_DATABASE']}")
 
-    def list_db_tebles():
+
+    def list_db_tables():
         pass
