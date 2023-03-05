@@ -1,4 +1,7 @@
 # Libraries used
+from sqlalchemy import create_engine
+import pandas as pd
+import psycopg2
 import yaml
 from yaml import Loader
 
@@ -13,6 +16,14 @@ class DatabaseConnector:
         read_db = DatabaseConnector.read_db_creds()
         return create_engine(f"postgresql+psycopg2://{read_db['RDS_USER']}:{read_db['RDS_PASSWORD']}@{read_db['RDS_HOST']}:{read_db['RDS_PORT']}/{read_db['RDS_DATABASE']}")
 
+    def list_db_table():
+        data = DatabaseConnector.read_db_creds()
+        with psycopg2.connect(host=data['RDS_HOST'], user=data['RDS_USER'], password=data['RDS_PASSWORD'], dbname=data['RDS_DATABASE'], port=data['RDS_PORT']) as conn:
+            with conn.cursor() as cur:
+                cur.execute('''SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';''')
+                for table in cur.fetchall():
+                    print(table)
 
-    def list_db_tables():
-        pass
+
+final = DatabaseConnector
+final.list_db_table()
