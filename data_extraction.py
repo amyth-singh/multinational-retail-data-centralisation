@@ -8,10 +8,12 @@ import database_utils
 # Extract data from multiple sources
 class DataExtractor:
     def read_rds_data():
-        rds = database_utils.DatabaseConnector.list_db_table
-        engine = database_utils.DatabaseConnector.init_db_engine
-        table_1 = pd.read_sql_table('orders_table', engine)
-        return table_1
+        data = database_utils.DatabaseConnector.read_db_creds()
+        con = psycopg2.connect(user = data['RDS_USER'], password = data['RDS_PASSWORD'], host = data['RDS_HOST'], port = data['RDS_PORT'], database = data['RDS_DATABASE'])
+        engine = database_utils.DatabaseConnector.init_db_engine()
+        sql = 'SELECT * FROM legacy_users LIMIT 10;'
+        df = pd.read_sql_query(sql,con)
+        return df
 
-data = DataExtractor
-data.read_rds_data()
+a = DataExtractor
+a.read_rds_data()
