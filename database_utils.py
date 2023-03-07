@@ -1,29 +1,22 @@
-# Libraries used
+# %%
 from sqlalchemy import create_engine
 import pandas as pd
 import psycopg2
 import yaml
 from yaml import Loader
 
-# Connect and upload data to the database
 class DatabaseConnector:
-    def read_db_creds():
+    def __init__(self):
+        pass
+
+    def read_db_creds(self):
         yaml_file = open('db_creds.yaml', 'r')
-        data = yaml.load(yaml_file, Loader=Loader)
-        return data
+        yaml_data = yaml.load(yaml_file, Loader=Loader)
+        return yaml_data
 
-    def init_db_engine():
-        read_db = DatabaseConnector.read_db_creds()
-        return create_engine(f"postgresql+psycopg2://{read_db['RDS_USER']}:{read_db['RDS_PASSWORD']}@{read_db['RDS_HOST']}:{read_db['RDS_PORT']}/{read_db['RDS_DATABASE']}")
+    def init_db_engine(self):
+        cred = DatabaseConnector.read_db_creds(self)
+        return create_engine(f"postgresql+psycopg2://{cred['RDS_USER']}:{cred['RDS_PASSWORD']}@{cred['RDS_HOST']}:{cred['RDS_PORT']}/{cred['RDS_DATABASE']}")
 
-    def list_db_tables():
-        data = DatabaseConnector.read_db_creds()
-        with psycopg2.connect(host=data['RDS_HOST'], user=data['RDS_USER'], password=data['RDS_PASSWORD'], dbname=data['RDS_DATABASE'], port=data['RDS_PORT']) as conn:
-            with conn.cursor() as cur:
-                cur.execute('''SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';''')
-                for table in cur.fetchall():
-                    print(table)
-
-
-final = DatabaseConnector
-final.list_db_table()
+    def upload_to_db(self):
+        pass
