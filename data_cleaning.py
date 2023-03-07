@@ -1,4 +1,4 @@
-#%%
+
 from sqlalchemy import create_engine
 import pandas as pd
 import psycopg2
@@ -20,4 +20,3 @@ class DataCleaning:
         clean_table['phone_number'] = clean_table['phone_number'].str.replace('\.|\(0\)|\(|\)|x', ' ')
         clean_table.dropna()
         return clean_table
-# %%
