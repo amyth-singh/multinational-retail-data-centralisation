@@ -1,17 +1,17 @@
-
-from sqlalchemy import create_engine
+#%%
+import database_utils as du
 import pandas as pd
 import psycopg2
 import yaml
 from yaml import Loader
-from database_utils import DatabaseConnector
+from sqlalchemy import create_engine
 
 class DataExtractor:
     def __init__(self):
         pass
 
     def list_db_tables(self):
-        cred = DatabaseConnector.read_db_creds(self)
+        cred = du.DatabaseConnector.read_db_creds(self)
         conn = psycopg2.connect(host=cred['RDS_HOST'], user=cred['RDS_USER'], password=cred['RDS_PASSWORD'], dbname=cred['RDS_DATABASE'], port=cred['RDS_PORT'])
         with conn:
             with conn.cursor() as cur:
@@ -20,7 +20,9 @@ class DataExtractor:
                     print(table)
 
     def read_rds_table(self, table_name):
-        engine_init_1 = DatabaseConnector()
-        engine_1 = engine_init_1.init_db_engine()
-        df = pd.read_sql_table(table_name, engine_1)
+        engine = du.DatabaseConnector.init_db_engine(self)
+        df = pd.read_sql_table(table_name, engine)
         return df
+
+a = DataExtractor()
+a.list_db_tables()

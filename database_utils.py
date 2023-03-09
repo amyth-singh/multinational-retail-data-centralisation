@@ -1,4 +1,5 @@
-
+#%%
+import data_cleaning as dc
 from sqlalchemy import create_engine
 import pandas as pd
 import psycopg2
@@ -18,5 +19,10 @@ class DatabaseConnector:
         cred = DatabaseConnector.read_db_creds(self)
         return create_engine(f"postgresql+psycopg2://{cred['RDS_USER']}:{cred['RDS_PASSWORD']}@{cred['RDS_HOST']}:{cred['RDS_PORT']}/{cred['RDS_DATABASE']}")
 
-    def upload_to_db(self):
-        pass
+    def upload_to_db(self, table_name):
+        final_table = dc.DataCleaning.clean_user_data(self, table_name)
+        return final_table
+
+
+a = DatabaseConnector()
+a.upload_to_db('legacy_users')
