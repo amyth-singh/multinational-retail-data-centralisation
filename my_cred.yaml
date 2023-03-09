@@ -1,0 +1,7 @@
+# my_database_credentials
+
+MY_HOST: localhost
+MY_PASSWORD: porcupine6
+MY_USER: postgres
+MY_DATABASE: Sales_Data
+MY_PORT: 5432
