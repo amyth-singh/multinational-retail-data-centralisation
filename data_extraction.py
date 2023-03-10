@@ -3,6 +3,7 @@ from yaml import Loader
 import yaml
 import pandas as pd
 import psycopg2
+import tabula
 
 class DataExtractor:
     def __init__(self):
@@ -19,3 +20,8 @@ class DataExtractor:
     def read_rds_table(self, table_name, engine):
         df = pd.read_sql_table(table_name, engine)
         return df
+
+    def retrieve_pdf_data(self, pdf_link):
+        list_of_dfs = tabula.read_pdf(pdf_link, pages='all')
+        dfs = list_of_dfs[0]
+        return dfs

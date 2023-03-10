@@ -17,3 +17,8 @@ class DataCleaning:
         raw_table.dropna()
         raw_table.set_index('index')
         return raw_table
+
+    def clean_card_data(self, raw_pdf_card_table):
+        raw_pdf_card_table.duplicated()
+        raw_pdf_card_table.dropna()
+        return raw_pdf_card_table

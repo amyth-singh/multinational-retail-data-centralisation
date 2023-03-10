@@ -39,6 +39,16 @@ class DatabaseConnector:
         )
         return upload
 
+    def upload_to_db_card(self, my_engine, clean_pdf_card_table):
+        dfs = clean_pdf_card_table
+        upload = dfs.to_sql(
+            name='dim_card_details',
+            con=my_engine,
+            index=False,
+            if_exists='replace'
+        )
+        return upload    
+
 # Instantiation
 databaseconnector = DatabaseConnector()
 datacleaning = DataCleaning()
@@ -48,14 +58,20 @@ dataextractor = DataExtractor()
 engine = databaseconnector.init_db_engine()
 my_engine = databaseconnector.init_my_engine()
 
-# Credentials
+# Credentials/Links
 cred = databaseconnector.read_db_creds()
 my_cred = databaseconnector.read_my_db_creds()
+pdf_link = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
 
 # Tables
 raw_table = dataextractor.read_rds_table('legacy_users', engine)
 clean_table = datacleaning.clean_user_data(raw_table)
+raw_pdf_card_table = dataextractor.retrieve_pdf_data(pdf_link)
+clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
 
 # Uploads to DB
 upload = databaseconnector.upload_to_db(my_engine, clean_table)
-upload
+upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
+
+# Workspace
+upload_card
