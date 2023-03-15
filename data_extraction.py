@@ -4,6 +4,8 @@ import yaml
 import pandas as pd
 import psycopg2
 import tabula
+import requests
+import json
 
 class DataExtractor:
     def __init__(self):
@@ -25,3 +27,17 @@ class DataExtractor:
         list_of_dfs = tabula.read_pdf(pdf_link, pages='all')
         dfs = list_of_dfs[0]
         return dfs
+
+    def list_number_of_stores(self, num_of_stores_endpoint, header):
+        request = requests.get(num_of_stores_endpoint, headers=header)
+        list_of_stores = json.loads(request.text)
+        return list_of_stores['number_stores']
+
+    def retrieve_stores_data(self, retrieve_store_endpoint, header):
+        empty_list = [ ]
+        for i in range(1, 100):
+            request = requests.get(retrieve_store_endpoint+str(i), headers=header)
+            req_1 = json.loads(request.text)
+            empty_list.append(req_1)
+            stores_data = pd.DataFrame(empty_list)
+        return stores_data

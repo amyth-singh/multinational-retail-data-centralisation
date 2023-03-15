@@ -6,6 +6,8 @@ from yaml import Loader
 import yaml
 import pandas as pd
 import psycopg2
+import requests
+import json
 
 class DatabaseConnector:
     def __init__(self):
@@ -63,15 +65,23 @@ cred = databaseconnector.read_db_creds()
 my_cred = databaseconnector.read_my_db_creds()
 pdf_link = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
 
+# API
+header = {'x-api-key' : 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
+num_of_stores_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
+retrieve_store_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/'
+
 # Tables
 raw_table = dataextractor.read_rds_table('legacy_users', engine)
 clean_table = datacleaning.clean_user_data(raw_table)
 raw_pdf_card_table = dataextractor.retrieve_pdf_data(pdf_link)
 clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
+list_number_of_stores = dataextractor.list_number_of_stores(num_of_stores_endpoint, header)
+retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
 
 # Uploads to DB
 upload = databaseconnector.upload_to_db(my_engine, clean_table)
 upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
 
+
 # Workspace
-upload_card
+retrieve_stores_data
