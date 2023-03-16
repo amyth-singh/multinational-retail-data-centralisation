@@ -96,4 +96,4 @@ upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean
 
 
 # Workspace
-clean_retrieve_stores_data
+upload_stores_data
