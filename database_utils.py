@@ -8,6 +8,14 @@ import pandas as pd
 import psycopg2
 import requests
 import json
+import boto3
+
+# AWS
+s3_client = boto3.client('s3')
+s3 = boto3.resource('s3')
+s3_bucket = s3.Bucket('multinational-retail-data-centralisation-aicore-project')
+
+
 
 class DatabaseConnector:
     def __init__(self):
@@ -96,4 +104,5 @@ upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean
 
 
 # Workspace
-upload_stores_data
+for file in s3_bucket.object.all():
+    print(file.key)
