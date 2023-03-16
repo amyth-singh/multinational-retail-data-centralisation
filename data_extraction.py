@@ -6,6 +6,7 @@ import psycopg2
 import tabula
 import requests
 import json
+import re
 
 class DataExtractor:
     def __init__(self):
@@ -34,8 +35,8 @@ class DataExtractor:
         return list_of_stores['number_stores']
 
     def retrieve_stores_data(self, retrieve_store_endpoint, header):
-        empty_list = [ ]
-        for i in range(1, 100):
+        empty_list = []
+        for i in range(0, 451): #451
             request = requests.get(retrieve_store_endpoint+str(i), headers=header)
             req_1 = json.loads(request.text)
             empty_list.append(req_1)

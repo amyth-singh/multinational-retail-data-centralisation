@@ -49,7 +49,17 @@ class DatabaseConnector:
             index=False,
             if_exists='replace'
         )
-        return upload    
+        return upload
+
+    def upload_to_db_stores_data(self, my_engine, clean_retrieve_stores_data):
+        dfs = clean_retrieve_stores_data
+        upload = dfs.to_sql(
+            name='dim_store_details',
+            con=my_engine,
+            index=False,
+            if_exists='replace'
+        )
+        return upload         
 
 # Instantiation
 databaseconnector = DatabaseConnector()
@@ -77,11 +87,13 @@ raw_pdf_card_table = dataextractor.retrieve_pdf_data(pdf_link)
 clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
 list_number_of_stores = dataextractor.list_number_of_stores(num_of_stores_endpoint, header)
 retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
+clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
 
 # Uploads to DB
 upload = databaseconnector.upload_to_db(my_engine, clean_table)
 upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
+upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_retrieve_stores_data)
 
 
 # Workspace
-retrieve_stores_data
+clean_retrieve_stores_data
