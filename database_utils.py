@@ -9,13 +9,12 @@ import psycopg2
 import requests
 import json
 import boto3
+from io import StringIO
 
 # AWS
-s3_client = boto3.client('s3')
 s3 = boto3.resource('s3')
-s3_bucket = s3.Bucket('multinational-retail-data-centralisation-aicore-project')
-
-
+s3_url = s3.Bucket('data-handling-public').Object('products.csv').get()
+s3_products_data = s3_url['Body'].read()
 
 class DatabaseConnector:
     def __init__(self):
@@ -96,6 +95,7 @@ clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
 list_number_of_stores = dataextractor.list_number_of_stores(num_of_stores_endpoint, header)
 retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
 clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
+raw_s3_products_data = dataextractor.extract_from_s3(s3_products_data)
 
 # Uploads to DB
 upload = databaseconnector.upload_to_db(my_engine, clean_table)
@@ -104,5 +104,4 @@ upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean
 
 
 # Workspace
-for file in s3_bucket.object.all():
-    print(file.key)
+raw_s3_products_data

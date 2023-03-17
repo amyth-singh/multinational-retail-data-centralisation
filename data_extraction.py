@@ -7,6 +7,7 @@ import tabula
 import requests
 import json
 import re
+from io import StringIO
 
 class DataExtractor:
     def __init__(self):
@@ -42,3 +43,9 @@ class DataExtractor:
             empty_list.append(req_1)
             stores_data = pd.DataFrame(empty_list)
         return stores_data
+
+    def extract_from_s3(self, s3_products_data ):
+        s=str(s3_products_data, 'utf-8')
+        data_1 = StringIO(s)
+        s3_products_data_df  = pd.read_csv(data_1)
+        return s3_products_data_df
