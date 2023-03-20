@@ -96,6 +96,7 @@ list_number_of_stores = dataextractor.list_number_of_stores(num_of_stores_endpoi
 retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
 clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
 raw_s3_products_data = dataextractor.extract_from_s3(s3_products_data)
+convert_product_weights = datacleaning.convert_product_weights(raw_s3_products_data)
 
 # Uploads to DB
 upload = databaseconnector.upload_to_db(my_engine, clean_table)
@@ -104,4 +105,4 @@ upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean
 
 
 # Workspace
-raw_s3_products_data
+convert_product_weights

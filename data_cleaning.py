@@ -28,17 +28,7 @@ class DataCleaning:
         df.set_index('index', inplace=True)
 
         # Drop unwanted Rows
-        df.drop(axis=0, index=0, inplace=True)
-        df.drop(axis=0, index=63, inplace=True)
-        df.drop(axis=0, index=172, inplace=True)
-        df.drop(axis=0, index=217, inplace=True)
-        df.drop(axis=0, index=231, inplace=True)
-        df.drop(axis=0, index=333, inplace=True)
-        df.drop(axis=0, index=381, inplace=True)
-        df.drop(axis=0, index=405, inplace=True)
-        df.drop(axis=0, index=414, inplace=True)
-        df.drop(axis=0, index=447, inplace=True)
-        df.drop(axis=0, index=437, inplace=True)
+        df.drop(axis=0, index=[0,63,172,217,231,333,381,405,414,447,437], inplace=True)
 
         # Format 'longitude' and 'latitude' columns
         df['longitude'] = df['longitude'].astype(float)
@@ -58,3 +48,36 @@ class DataCleaning:
         df.convert_dtypes()
         
         return df
+
+    def convert_product_weights(self, raw_s3_products_data):
+        df = raw_s3_products_data
+        df.dropna()
+        df.drop(index=[266,788,794,1660,1400,751,1133], inplace=True)
+        df.reset_index(drop=True)
+        
+        # Columns get split on 'x'
+        split_1 = df['weight'].str.split(pat='x', n=1, expand=True)
+
+        # New Columns are assigned
+        df['weight_g'] = split_1[1]
+        df['no_items'] = split_1[0]
+
+        # Strip characters (kg, g, .)
+        df['weight_g'] = df['weight_g'].str.replace('[kg]|[.]', '', regex=True)
+        df['no_items'] = df['no_items'].str.replace('[kg]|[.]|[ml]|[oz]', '', regex=True)
+
+        # Replace Non-Type
+        df['weight_g'] = df['weight_g'].fillna(value=0)
+
+        # Change dtypes of new columns
+        df['weight_g'] = df['weight_g'].astype(float)
+        df['no_items'] = df['no_items'].astype(float)
+
+        # Calculated column
+        df['in_kg'] = df['weight_g'] * df['no_items'] / 1000
+        df['in_kg'] = df['in_kg'].round(1)
+
+        return df
+
+    def clean_products_data(self):
+        pass
