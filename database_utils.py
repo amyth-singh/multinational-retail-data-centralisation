@@ -10,11 +10,17 @@ import requests
 import json
 import boto3
 from io import StringIO
+import tabula
 
 # AWS
 s3 = boto3.resource('s3')
 s3_url = s3.Bucket('data-handling-public').Object('products.csv').get()
 s3_products_data = s3_url['Body'].read()
+
+# AWS (JSON)
+s3_json = boto3.resource('s3')
+s3_Json_url = s3.Bucket('data-handling-public').Object('date_details.json').get()
+s3_date_details_data = s3_url['Body'].read()
 
 class DatabaseConnector:
     def __init__(self):
@@ -37,6 +43,8 @@ class DatabaseConnector:
     def init_db_engine(self):
         cred = self.read_db_creds()
         return create_engine(f"postgresql+psycopg2://{cred['RDS_USER']}:{cred['RDS_PASSWORD']}@{cred['RDS_HOST']}:{cred['RDS_PORT']}/{cred['RDS_DATABASE']}")
+
+# Upload to database functions
 
     def upload_to_db(self, my_engine, clean_table):
         df = clean_table
@@ -66,7 +74,27 @@ class DatabaseConnector:
             index=False,
             if_exists='replace'
         )
-        return upload         
+        return upload
+        
+    def upload_to_db_product_data(self, my_engine, clean_products_data):
+        dfs = clean_products_data
+        upload = dfs.to_sql(
+            name='dim_products',
+            con=my_engine,
+            index=False,
+            if_exists='replace'
+        )
+        return upload
+
+    def upload_to_db_orders_data(self, my_engine, clean_orders_data):
+        dfs = clean_orders_data
+        upload = dfs.to_sql(
+            name='orders_table',
+            con=my_engine,
+            index=False,
+            if_exists='replace'
+        )
+        return upload
 
 # Instantiation
 databaseconnector = DatabaseConnector()
@@ -80,7 +108,10 @@ my_engine = databaseconnector.init_my_engine()
 # Credentials/Links
 cred = databaseconnector.read_db_creds()
 my_cred = databaseconnector.read_my_db_creds()
+
+# Links
 pdf_link = "https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf"
+json_link = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json'
 
 # API
 header = {'x-api-key' : 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
@@ -88,21 +119,30 @@ num_of_stores_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com
 retrieve_store_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/'
 
 # Tables
-raw_table = dataextractor.read_rds_table('legacy_users', engine)
-clean_table = datacleaning.clean_user_data(raw_table)
-raw_pdf_card_table = dataextractor.retrieve_pdf_data(pdf_link)
-clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
+list_table_names = dataextractor.list_db_tables(cred)
 list_number_of_stores = dataextractor.list_number_of_stores(num_of_stores_endpoint, header)
-retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
-clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
+
+raw_table = dataextractor.read_rds_table('legacy_users', engine)
+raw_orders_table = dataextractor.read_rds_table('orders_table', engine)
+raw_pdf_card_table = dataextractor.retrieve_pdf_data(pdf_link)
 raw_s3_products_data = dataextractor.extract_from_s3(s3_products_data)
+raw_s3_date_details_data = dataextractor.extract_json_from_s3(json_link)
+
+retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
 convert_product_weights = datacleaning.convert_product_weights(raw_s3_products_data)
+
+clean_table = datacleaning.clean_user_data(raw_table)
+clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
+clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
+clean_products_data = datacleaning.clean_products_data(convert_product_weights)
+clean_orders_data = datacleaning.clean_orders_data(raw_orders_table)
 
 # Uploads to DB
 upload = databaseconnector.upload_to_db(my_engine, clean_table)
 upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
 upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_retrieve_stores_data)
-
+upload_product_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
+upload_to_db_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean_orders_data)
 
 # Workspace
-convert_product_weights
+raw_s3_date_details_data

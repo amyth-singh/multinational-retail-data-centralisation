@@ -44,8 +44,16 @@ class DataExtractor:
             stores_data = pd.DataFrame(empty_list)
         return stores_data
 
-    def extract_from_s3(self, s3_products_data ):
+    def extract_from_s3(self, s3_products_data):
         s=str(s3_products_data, 'utf-8')
         data_1 = StringIO(s)
-        s3_products_data_df  = pd.read_csv(data_1)
+        s3_products_data_df  = pd.read_csv(data_1, index_col=0)
         return s3_products_data_df
+
+    def extract_json_from_s3(self, json_link):
+        empty_list = []
+        r = requests.get(json_link)
+        json_data = json.loads(r.text)
+        empty_list.append(json_data)
+        df = pd.DataFrame(empty_list[0])
+        return df

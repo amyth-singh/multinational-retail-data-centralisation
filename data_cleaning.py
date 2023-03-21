@@ -79,5 +79,15 @@ class DataCleaning:
 
         return df
 
-    def clean_products_data(self):
-        pass
+    def clean_products_data(self, convert_product_weights):
+        df = convert_product_weights
+        return df
+
+    def clean_orders_data(self, raw_orders_table):
+        df = raw_orders_table
+        df.drop(columns='1', inplace=True)
+        df.drop(columns='level_0', inplace=True)
+        df.drop(columns='first_name', inplace=True)
+        df.drop(columns='last_name', inplace=True)
+        df.set_index('index', inplace=True)
+        return df
