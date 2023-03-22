@@ -13,9 +13,14 @@ class DataCleaning:
     def clean_user_data(self, raw_table):
         raw_table['address'] = raw_table['address'].str.replace('\n|/|\.|-|,', ' ', regex=True)
         raw_table['phone_number'] = raw_table['phone_number'].str.replace('\.|\(0\)|\(|\)|x', ' ', regex=True)
-        raw_table.dropna()
-        raw_table.set_index('index')
-        return raw_table
+        object_columns = raw_table.select_dtypes(['object']).columns
+        raw_table[object_columns] = raw_table[object_columns].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
+        df2 = raw_table.drop(raw_table[raw_table['date_of_birth'].str.contains("NaN|NULL")].index)
+        df2 = raw_table.drop(raw_table[raw_table['phone_number'].str.contains("NaN|NULL")].index)
+        df2['date_of_birth'] = pd.to_datetime(df2['date_of_birth'])
+        df2['join_date'] = pd.to_datetime(df2['join_date'])
+        df2.reset_index(drop=True)
+        return df2
 
     def clean_card_data(self, raw_pdf_card_table):
         raw_pdf_card_table.duplicated()

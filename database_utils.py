@@ -96,6 +96,16 @@ class DatabaseConnector:
         )
         return upload
 
+    def upload_to_db_date_times(self, my_engine, raw_s3_date_details_data):
+        dfs = raw_s3_date_details_data
+        upload = dfs.to_sql(
+            name='dim_date_times',
+            con=my_engine,
+            index=False,
+            if_exists='replace'
+        )
+        return upload
+
 # Instantiation
 databaseconnector = DatabaseConnector()
 datacleaning = DataCleaning()
@@ -131,18 +141,19 @@ raw_s3_date_details_data = dataextractor.extract_json_from_s3(json_link)
 retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
 convert_product_weights = datacleaning.convert_product_weights(raw_s3_products_data)
 
-clean_table = datacleaning.clean_user_data(raw_table)
+clean_user_table = datacleaning.clean_user_data(raw_table)
 clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
 clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
 clean_products_data = datacleaning.clean_products_data(convert_product_weights)
 clean_orders_data = datacleaning.clean_orders_data(raw_orders_table)
 
 # Uploads to DB
-upload = databaseconnector.upload_to_db(my_engine, clean_table)
+upload_clean_user_table = databaseconnector.upload_to_db(my_engine, clean_user_table)
 upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
 upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_retrieve_stores_data)
 upload_product_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
 upload_to_db_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean_orders_data)
+upload_to_db_date_times = databaseconnector.upload_to_db_date_times(my_engine, raw_s3_date_details_data)
 
 # Workspace
-raw_s3_date_details_data
+upload_clean_user_table
