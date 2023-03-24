@@ -12,7 +12,7 @@ import boto3
 from io import StringIO
 import tabula
 
-# AWS
+# AWS (CSV)
 s3 = boto3.resource('s3')
 s3_url = s3.Bucket('data-handling-public').Object('products.csv').get()
 s3_products_data = s3_url['Body'].read()
@@ -96,8 +96,8 @@ class DatabaseConnector:
         )
         return upload
 
-    def upload_to_db_date_times(self, my_engine, raw_s3_date_details_data):
-        dfs = raw_s3_date_details_data
+    def upload_to_db_date_times(self, my_engine, clean_date_time):
+        dfs = clean_date_time
         upload = dfs.to_sql(
             name='dim_date_times',
             con=my_engine,
@@ -146,14 +146,15 @@ clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
 clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
 clean_products_data = datacleaning.clean_products_data(convert_product_weights)
 clean_orders_data = datacleaning.clean_orders_data(raw_orders_table)
+clean_date_time = datacleaning.dim_date_times(raw_s3_date_details_data)
 
 # Uploads to DB
 upload_clean_user_table = databaseconnector.upload_to_db(my_engine, clean_user_table)
 upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
 upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_retrieve_stores_data)
-upload_product_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
+upload_clean_products_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
 upload_to_db_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean_orders_data)
-upload_to_db_date_times = databaseconnector.upload_to_db_date_times(my_engine, raw_s3_date_details_data)
+upload_to_db_date_times = databaseconnector.upload_to_db_date_times(my_engine, clean_date_time)
 
 # Workspace
-upload_clean_user_table
+upload_card

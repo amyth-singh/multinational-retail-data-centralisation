@@ -23,66 +23,74 @@ class DataCleaning:
         return df2
 
     def clean_card_data(self, raw_pdf_card_table):
-        raw_pdf_card_table.duplicated()
-        raw_pdf_card_table.dropna()
+        df = raw_pdf_card_table
+        df.duplicated()
+        df.dropna()
+        df['date_payment_confirmed'] = pd.to_datetime(df['date_payment_confirmed'])
         return raw_pdf_card_table
 
     def clean_store_data(self, retrieve_stores_data):
         df = retrieve_stores_data
         df.drop(columns='lat', inplace=True)
-        df.set_index('index', inplace=True)
-
-        # Drop unwanted Rows
-        df.drop(axis=0, index=[0,63,172,217,231,333,381,405,414,447,437], inplace=True)
-
-        # Format 'longitude' and 'latitude' columns
-        df['longitude'] = df['longitude'].astype(float)
-        df['latitude'] = df['latitude'].astype(float)
-
-        # Clean 'continent' column
+        df['staff_numbers'] = df['staff_numbers'].replace(to_replace = '[a-zA-Z]', value = '', regex = True)
         df.loc[df['continent'] == 'eeEurope', 'continent'] = 'Europe'
         df.loc[df['continent'] == 'eeAmerica', 'continent'] = 'America'
-
-        # Clearn 'opening_date' column
-        df.loc[df['opening_date'] == '/', 'opening_date'] = '-'
+        df = df.drop(df[df['address'].str.contains("NaN|NULL|N/A")].index)
+        df['address'] = df['address'].str.replace('\n|/|\.', ' ', regex=True)
+        o_c = df.select_dtypes(['object']).columns
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
+        df = df.drop(df[df['address'].str.contains("NaN|NULL")].index)
         df['opening_date'] = pd.to_datetime(df['opening_date'])
-
-        # Clean 'address' column
-        df['address'] = df['address'].str.replace('\n|/|\.|-|,', ' ', regex=True)
-
-        df.convert_dtypes()
-        
+        df['longitude'] = df['longitude'].astype(float)
+        df['latitude'] = df['latitude'].astype(float)
+        df.reset_index(drop=True)
         return df
 
     def convert_product_weights(self, raw_s3_products_data):
         df = raw_s3_products_data
-        df.dropna()
-        df.drop(index=[266,788,794,1660,1400,751,1133], inplace=True)
-        df.reset_index(drop=True)
+
+        # Dataframe cleaning
+        o_c = df.select_dtypes(['object']).columns
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
+        df.drop(index=[266,751,788,794,1133,1400,1660,1705,1841], inplace=True)
+
+        # Create columns
+        df['grams'] = df['weight'].str.extract(r'(\d+g)') # Grams
+        df['kilos'] = df['weight'].str.extract(r'(.+kg)') # Kilos
+        df['mililitre'] = df['weight'].str.extract(r'(.+ml)') # Mililitre
+        df['item_q'] = df['weight'].str.extract(r'(.+x)') # Item Quantity
+
+        # Column cleaning
+        df['grams'] = df['grams'].str.strip('gk')
+        df['grams'].fillna(0, inplace=True)
+        df['grams'] = df['grams'].astype(float)
         
-        # Columns get split on 'x'
-        split_1 = df['weight'].str.split(pat='x', n=1, expand=True)
+        df['kilos'] = df['kilos'].str.strip('kg')
+        df['kilos'].fillna(0, inplace=True)
+        df['kilos'] = df['kilos'].astype(float)
 
-        # New Columns are assigned
-        df['weight_g'] = split_1[1]
-        df['no_items'] = split_1[0]
+        df['mililitre'] = df['mililitre'].str.strip('ml')
+        df['mililitre'].fillna(0, inplace=True)
+        df['mililitre'] = df['mililitre'].astype(int)
 
-        # Strip characters (kg, g, .)
-        df['weight_g'] = df['weight_g'].str.replace('[kg]|[.]', '', regex=True)
-        df['no_items'] = df['no_items'].str.replace('[kg]|[.]|[ml]|[oz]', '', regex=True)
+        df['item_q'] = df['item_q'].str.strip(' x')
+        df['item_q'].fillna(0, inplace=True)
+        df['item_q'] = df['item_q'].astype(int)
 
-        # Replace Non-Type
-        df['weight_g'] = df['weight_g'].fillna(value=0)
+        df['product_price'] = df['product_price'].str.strip('£').astype(float)
 
-        # Change dtypes of new columns
-        df['weight_g'] = df['weight_g'].astype(float)
-        df['no_items'] = df['no_items'].astype(float)
+        # Calculations
+        df['grams-in-kg'] = df['grams'] / 1000
+        df['ml-in-kg'] = df['mililitre'] / 1000
+        df['x-grams'] = df['item_q'] * df['grams'] / 1000
 
-        # Calculated column
-        df['in_kg'] = df['weight_g'] * df['no_items'] / 1000
-        df['in_kg'] = df['in_kg'].round(1)
-
-        return df
+        # Final columns
+        df['in-kgs'] = df['grams-in-kg'] + df['ml-in-kg'] + df['x-grams'] + df['kilos'].astype(float)
+        df['in-kgs'] = df['in-kgs'].round(1)
+        df1 = df[['product_name', 'product_price', 'category', 'EAN', 'date_added', 'uuid', 'removed', 'product_code', 'weight', 'in-kgs']]
+        df1 = df1.reset_index(drop=True)
+    
+        return df1
 
     def clean_products_data(self, convert_product_weights):
         df = convert_product_weights
@@ -95,4 +103,11 @@ class DataCleaning:
         df.drop(columns='first_name', inplace=True)
         df.drop(columns='last_name', inplace=True)
         df.set_index('index', inplace=True)
+        return df
+
+    def dim_date_times(self, raw_s3_date_details_data):
+        df = raw_s3_date_details_data
+        o_c = df.select_dtypes(['object']).columns
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
+        df = df.drop(df[df['timestamp'].str.contains("NaN|NULL")].index)
         return df
