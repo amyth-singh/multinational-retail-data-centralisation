@@ -11,6 +11,7 @@ import json
 import boto3
 from io import StringIO
 import tabula
+import numpy as np
 
 # AWS (CSV)
 s3 = boto3.resource('s3')
@@ -96,8 +97,8 @@ class DatabaseConnector:
         )
         return upload
 
-    def upload_to_db_date_times(self, my_engine, clean_date_time):
-        dfs = clean_date_time
+    def upload_to_db_date_times(self, my_engine, clean_date_times):
+        dfs = clean_date_times
         upload = dfs.to_sql(
             name='dim_date_times',
             con=my_engine,
@@ -132,29 +133,29 @@ retrieve_store_endpoint = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.co
 list_table_names = dataextractor.list_db_tables(cred)
 list_number_of_stores = dataextractor.list_number_of_stores(num_of_stores_endpoint, header)
 
-raw_table = dataextractor.read_rds_table('legacy_users', engine)
-raw_orders_table = dataextractor.read_rds_table('orders_table', engine)
-raw_pdf_card_table = dataextractor.retrieve_pdf_data(pdf_link)
-raw_s3_products_data = dataextractor.extract_from_s3(s3_products_data)
-raw_s3_date_details_data = dataextractor.extract_json_from_s3(json_link)
+# Raw Tables
+raw_user_data = dataextractor.read_rds_table('legacy_users', engine)
+raw_orders_data = dataextractor.read_rds_table('orders_table', engine)
+raw_pdf_card_data = dataextractor.extract_pdf_data(pdf_link)
+raw_products_data = dataextractor.extract_products_data(s3_products_data)
+raw_date_times = dataextractor.extract_date_times(json_link)
+raw_stores_data = dataextractor.extract_stores_data(retrieve_store_endpoint, header)
 
-retrieve_stores_data = dataextractor.retrieve_stores_data(retrieve_store_endpoint, header)
-convert_product_weights = datacleaning.convert_product_weights(raw_s3_products_data)
-
-clean_user_table = datacleaning.clean_user_data(raw_table)
-clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_table)
-clean_retrieve_stores_data = datacleaning.clean_store_data(retrieve_stores_data)
-clean_products_data = datacleaning.clean_products_data(convert_product_weights)
-clean_orders_data = datacleaning.clean_orders_data(raw_orders_table)
-clean_date_time = datacleaning.dim_date_times(raw_s3_date_details_data)
+# Clean Tables
+clean_user_table = datacleaning.clean_user_data(raw_user_data)
+clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_data)
+clean_stores_data = datacleaning.clean_store_data(raw_stores_data)
+clean_products_data = datacleaning.clean_products_data(raw_products_data)
+clean_orders_data = datacleaning.clean_orders_data(raw_orders_data)
+clean_date_times = datacleaning.clean_date_times(raw_date_times)
 
 # Uploads to DB
 upload_clean_user_table = databaseconnector.upload_to_db(my_engine, clean_user_table)
 upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
-upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_retrieve_stores_data)
+upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_stores_data)
 upload_clean_products_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
 upload_to_db_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean_orders_data)
-upload_to_db_date_times = databaseconnector.upload_to_db_date_times(my_engine, clean_date_time)
+upload_to_db_date_times = databaseconnector.upload_to_db_date_times(my_engine, clean_date_times)
 
 # Workspace
-upload_card
+clean_date_times

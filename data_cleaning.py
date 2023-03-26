@@ -4,6 +4,7 @@ from yaml import Loader
 import yaml
 import pandas as pd
 import psycopg2
+import numpy as np
 
 class DataCleaning:
     def __init__(self):
@@ -19,18 +20,23 @@ class DataCleaning:
         df2 = raw_table.drop(raw_table[raw_table['phone_number'].str.contains("NaN|NULL")].index)
         df2['date_of_birth'] = pd.to_datetime(df2['date_of_birth'])
         df2['join_date'] = pd.to_datetime(df2['join_date'])
+        df2.drop_duplicates(keep=False, inplace=True)
         df2.reset_index(drop=True)
         return df2
 
-    def clean_card_data(self, raw_pdf_card_table):
-        df = raw_pdf_card_table
-        df.duplicated()
-        df.dropna()
+    def clean_card_data(self, extract_pdf_data):
+        df = extract_pdf_data
+        df.dropna(inplace=True)
+        df = df.drop(df[df['card_number'].str.contains("card_number")].index)
+        o_c = df.select_dtypes(['object']).columns
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'drop_me', regex=True)
+        df = df.drop(df[df['card_number'].str.contains('drop_me')].index)
         df['date_payment_confirmed'] = pd.to_datetime(df['date_payment_confirmed'])
-        return raw_pdf_card_table
+        df['card_number'] = df['card_number'].str.strip('?')
+        return df
 
-    def clean_store_data(self, retrieve_stores_data):
-        df = retrieve_stores_data
+    def clean_store_data(self, extract_stores_data):
+        df = extract_stores_data
         df.drop(columns='lat', inplace=True)
         df['staff_numbers'] = df['staff_numbers'].replace(to_replace = '[a-zA-Z]', value = '', regex = True)
         df.loc[df['continent'] == 'eeEurope', 'continent'] = 'Europe'
@@ -46,7 +52,7 @@ class DataCleaning:
         df.reset_index(drop=True)
         return df
 
-    def convert_product_weights(self, raw_s3_products_data):
+    def clean_products_data(self, raw_s3_products_data):
         df = raw_s3_products_data
 
         # Dataframe cleaning
@@ -80,21 +86,19 @@ class DataCleaning:
         df['product_price'] = df['product_price'].str.strip('£').astype(float)
 
         # Calculations
-        df['grams-in-kg'] = df['grams'] / 1000
-        df['ml-in-kg'] = df['mililitre'] / 1000
-        df['x-grams'] = df['item_q'] * df['grams'] / 1000
+        df['grams_in_kg'] = df['grams'] / 1000
+        df['ml_in_kg'] = df['mililitre'] / 1000
+        df['x_grams'] = df['item_q'] * df['grams'] / 1000
 
         # Final columns
-        df['in-kgs'] = df['grams-in-kg'] + df['ml-in-kg'] + df['x-grams'] + df['kilos'].astype(float)
-        df['in-kgs'] = df['in-kgs'].round(1)
-        df1 = df[['product_name', 'product_price', 'category', 'EAN', 'date_added', 'uuid', 'removed', 'product_code', 'weight', 'in-kgs']]
+        df['in_kgs'] = df['grams_in_kg'] + df['ml_in_kg'] + df['x_grams'] + df['kilos'].astype(float)
+        df['in_kgs'] = df['in_kgs'].round(1)
+        df1 = df[['product_name', 'product_price', 'category', 'EAN', 'date_added', 'uuid', 'removed', 'product_code', 'weight', 'in_kgs']]
+        df1['date_added'] = pd.to_datetime(df1['date_added'])
+        df1['still_avaliable'] = np.where(df['removed'] == 'Still_avaliable', True, False)
+        df1.drop_duplicates(inplace=True)
         df1 = df1.reset_index(drop=True)
-    
         return df1
-
-    def clean_products_data(self, convert_product_weights):
-        df = convert_product_weights
-        return df
 
     def clean_orders_data(self, raw_orders_table):
         df = raw_orders_table
@@ -103,11 +107,11 @@ class DataCleaning:
         df.drop(columns='first_name', inplace=True)
         df.drop(columns='last_name', inplace=True)
         df.set_index('index', inplace=True)
-        return df
+        df_v1 = df.drop_duplicates('card_number')
+        return df_v1
 
-    def dim_date_times(self, raw_s3_date_details_data):
-        df = raw_s3_date_details_data
+    def clean_date_times(self, raw_date_times):
+        df = raw_date_times
         o_c = df.select_dtypes(['object']).columns
-        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
-        df = df.drop(df[df['timestamp'].str.contains("NaN|NULL")].index)
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', '0', regex=True)
         return df
