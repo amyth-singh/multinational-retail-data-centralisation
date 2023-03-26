@@ -12,17 +12,16 @@ class DataCleaning:
 
     # Clean a Table
     def clean_user_data(self, raw_table):
-        raw_table['address'] = raw_table['address'].str.replace('\n|/|\.|-|,', ' ', regex=True)
-        raw_table['phone_number'] = raw_table['phone_number'].str.replace('\.|\(0\)|\(|\)|x', ' ', regex=True)
-        object_columns = raw_table.select_dtypes(['object']).columns
-        raw_table[object_columns] = raw_table[object_columns].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
-        df2 = raw_table.drop(raw_table[raw_table['date_of_birth'].str.contains("NaN|NULL")].index)
-        df2 = raw_table.drop(raw_table[raw_table['phone_number'].str.contains("NaN|NULL")].index)
-        df2['date_of_birth'] = pd.to_datetime(df2['date_of_birth'])
-        df2['join_date'] = pd.to_datetime(df2['join_date'])
-        df2.drop_duplicates(keep=False, inplace=True)
-        df2.reset_index(drop=True)
-        return df2
+        df = raw_table
+        df['address'] = df['address'].str.replace('\n|/|\.|-|,', '', regex=True)
+        df['phone_number'] = df['phone_number'].str.replace('\.|\(0\)|\(|\)|x', '', regex=True)
+        df.drop(index=[752, 1046, 2995, 3536, 5306, 6420, 8386, 9013, 10211, 10360, 11366, 12177, 13111, 14101, 14499], inplace=True)
+        df = df.drop(df[df['user_uuid'].str.contains('NULL')].index)
+        df['date_of_birth'] = pd.to_datetime(df['date_of_birth'])
+        df['join_date'] = pd.to_datetime(df['join_date'])
+        df.reset_index(drop=True)
+        df = df.drop(columns='index')
+        return df
 
     def clean_card_data(self, extract_pdf_data):
         df = extract_pdf_data
@@ -38,17 +37,21 @@ class DataCleaning:
     def clean_store_data(self, extract_stores_data):
         df = extract_stores_data
         df.drop(columns='lat', inplace=True)
+        o_c = df.select_dtypes(['object']).columns
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'drop_me', regex=True)
+        df = df.drop(df[df['address'].str.contains('drop_me')].index)
+        df = df.drop(df[df['address'].str.contains("NaN|NULL")].index)
+        df.at[0,'latitude'] = '0.0000'
+        df.at[0,'longitude'] = '0.0000'
+        df.at[0,'locality'] = 'Web Store'
+        df.at[0,'address'] = 'Web Store'
+        df['address'] = df['address'].str.replace('\n|/|\.', ' ', regex=True)
         df['staff_numbers'] = df['staff_numbers'].replace(to_replace = '[a-zA-Z]', value = '', regex = True)
         df.loc[df['continent'] == 'eeEurope', 'continent'] = 'Europe'
         df.loc[df['continent'] == 'eeAmerica', 'continent'] = 'America'
-        df = df.drop(df[df['address'].str.contains("NaN|NULL|N/A")].index)
-        df['address'] = df['address'].str.replace('\n|/|\.', ' ', regex=True)
-        o_c = df.select_dtypes(['object']).columns
-        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
-        df = df.drop(df[df['address'].str.contains("NaN|NULL")].index)
-        df['opening_date'] = pd.to_datetime(df['opening_date'])
         df['longitude'] = df['longitude'].astype(float)
-        df['latitude'] = df['latitude'].astype(float)
+        df['latitude'] = df['latitude'].astype(float)      
+        df['opening_date'] = pd.to_datetime(df['opening_date'])
         df.reset_index(drop=True)
         return df
 
@@ -56,9 +59,7 @@ class DataCleaning:
         df = raw_s3_products_data
 
         # Dataframe cleaning
-        o_c = df.select_dtypes(['object']).columns
-        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
-        df.drop(index=[266,751,788,794,1133,1400,1660,1705,1841], inplace=True)
+        df.drop(index=[751,1133,1400,266,788,794,1660], inplace=True)
 
         # Create columns
         df['grams'] = df['weight'].str.extract(r'(\d+g)') # Grams
@@ -96,22 +97,20 @@ class DataCleaning:
         df1 = df[['product_name', 'product_price', 'category', 'EAN', 'date_added', 'uuid', 'removed', 'product_code', 'weight', 'in_kgs']]
         df1['date_added'] = pd.to_datetime(df1['date_added'])
         df1['still_avaliable'] = np.where(df['removed'] == 'Still_avaliable', True, False)
-        df1.drop_duplicates(inplace=True)
         df1 = df1.reset_index(drop=True)
         return df1
 
     def clean_orders_data(self, raw_orders_table):
         df = raw_orders_table
-        df.drop(columns='1', inplace=True)
-        df.drop(columns='level_0', inplace=True)
-        df.drop(columns='first_name', inplace=True)
-        df.drop(columns='last_name', inplace=True)
-        df.set_index('index', inplace=True)
-        df_v1 = df.drop_duplicates('card_number')
-        return df_v1
+        df.drop(columns=['first_name', 'last_name', 'level_0', '1', 'index'], inplace=True)
+        df = df.drop_duplicates('user_uuid')
+        df.reset_index(drop=True)
+        return df
 
     def clean_date_times(self, raw_date_times):
         df = raw_date_times
+        df = df.drop_duplicates('date_uuid')
         o_c = df.select_dtypes(['object']).columns
-        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', '0', regex=True)
+        df[o_c] = df[o_c].replace('^[A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9][A-Z0-9]$', 'NaN', regex=True)
+        df = df.drop(df[df['date_uuid'].str.contains("NaN|NULL")].index)
         return df

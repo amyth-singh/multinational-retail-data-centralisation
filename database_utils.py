@@ -47,8 +47,8 @@ class DatabaseConnector:
 
 # Upload to database functions
 
-    def upload_to_db(self, my_engine, clean_table):
-        df = clean_table
+    def upload_to_db(self, my_engine, clean_user_data):
+        df = clean_user_data
         upload = df.to_sql(
             name='dim_users',
             con=my_engine,
@@ -57,8 +57,8 @@ class DatabaseConnector:
         )
         return upload
 
-    def upload_to_db_card(self, my_engine, clean_pdf_card_table):
-        dfs = clean_pdf_card_table
+    def upload_to_db_card(self, my_engine, clean_pdf_card_data):
+        dfs = clean_pdf_card_data
         upload = dfs.to_sql(
             name='dim_card_details',
             con=my_engine,
@@ -142,20 +142,20 @@ raw_date_times = dataextractor.extract_date_times(json_link)
 raw_stores_data = dataextractor.extract_stores_data(retrieve_store_endpoint, header)
 
 # Clean Tables
-clean_user_table = datacleaning.clean_user_data(raw_user_data)
-clean_pdf_card_table = datacleaning.clean_card_data(raw_pdf_card_data)
+clean_user_data = datacleaning.clean_user_data(raw_user_data)
+clean_pdf_card_data = datacleaning.clean_card_data(raw_pdf_card_data)
 clean_stores_data = datacleaning.clean_store_data(raw_stores_data)
 clean_products_data = datacleaning.clean_products_data(raw_products_data)
 clean_orders_data = datacleaning.clean_orders_data(raw_orders_data)
 clean_date_times = datacleaning.clean_date_times(raw_date_times)
 
 # Uploads to DB
-upload_clean_user_table = databaseconnector.upload_to_db(my_engine, clean_user_table)
-upload_card = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_table)
+upload_user_data = databaseconnector.upload_to_db(my_engine, clean_user_data)
+upload_card_data = databaseconnector.upload_to_db_card(my_engine, clean_pdf_card_data)
 upload_stores_data = databaseconnector.upload_to_db_stores_data(my_engine, clean_stores_data)
-upload_clean_products_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
-upload_to_db_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean_orders_data)
-upload_to_db_date_times = databaseconnector.upload_to_db_date_times(my_engine, clean_date_times)
+upload_products_data = databaseconnector.upload_to_db_product_data(my_engine, clean_products_data)
+upload_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean_orders_data)
+upload_date_times_data = databaseconnector.upload_to_db_date_times(my_engine, clean_date_times)
 
 # Workspace
-clean_date_times
+upload_stores_data

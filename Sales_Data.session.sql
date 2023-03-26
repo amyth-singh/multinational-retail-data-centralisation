@@ -5,6 +5,7 @@
     ALTER TABLE orders_table ALTER COLUMN user_uuid TYPE uuid USING user_uuid::uuid;
     ALTER TABLE orders_table ALTER COLUMN card_number TYPE varchar (255);
     ALTER TABLE orders_table ALTER COLUMN store_code TYPE varchar (255);
+    ALTER TABLE orders_table ALTER COLUMN product_code TYPE varchar (255);
 
 ---------------/* dim_users */------------
 -- 'date_of_birth' converted in data_cleaning
@@ -52,7 +53,7 @@
     ALTER TABLE dim_date_times ALTER COLUMN year TYPE varchar (255);
     ALTER TABLE dim_date_times ALTER COLUMN day TYPE varchar (255);
     ALTER TABLE dim_date_times ALTER COLUMN time_period TYPE varchar (255);
-    ALTER TABLE dim_date_times ALTER COLUMN date_uuid TYPE uuid using date_uuid::uuid;
+    ALTER TABLE dim_date_times ALTER COLUMN date_uuid TYPE uuid USING date_uuid::uuid;
 
 ---------------/* Updating datatypes of columns, dim_card_details */---------------
 -- 'date_payment_confirmed' updated in data_cleaning then pgadmin
@@ -67,8 +68,11 @@
     ALTER TABLE dim_users ADD PRIMARY KEY (user_uuid);
 
 ----------------/* Adding foreign keys to orders table */---------
-    -- ALTER TABLE orders_table ADD CONSTRAINT fk_card_number FOREIGN KEY (card_number) REFERENCES dim_card_details(card_number);
-    -- ALTER TABLE orders_table ADD CONSTRAINT fk_date_uuid FOREIGN KEY (date_uuid) REFERENCES dim_date_times(date_uuid);
+    ALTER TABLE orders_table ADD CONSTRAINT fk_user_uuid FOREIGN KEY (user_uuid) REFERENCES dim_users(user_uuid);
+    ALTER TABLE orders_table ADD CONSTRAINT fk_card_number FOREIGN KEY (card_number) REFERENCES dim_card_details(card_number);
+    ALTER TABLE orders_table ADD CONSTRAINT fk_date_uuid FOREIGN KEY (date_uuid) REFERENCES dim_date_times(date_uuid);
+    ALTER TABLE orders_table ADD CONSTRAINT fk_store_code FOREIGN KEY (store_code) REFERENCES dim_store_details(store_code);
+    ALTER TABLE orders_table ADD CONSTRAINT fk_product_code FOREIGN KEY (product_code) REFERENCES dim_products(product_code);
 
 
 
