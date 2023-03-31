@@ -42,4 +42,3 @@
     GROUP BY dim_store_details.store_type;
 
 -- Gets total_sales byt year and month
-
