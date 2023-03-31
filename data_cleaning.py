@@ -66,6 +66,7 @@ class DataCleaning:
         df['kilos'] = df['weight'].str.extract(r'(.+kg)') # Kilos
         df['mililitre'] = df['weight'].str.extract(r'(.+ml)') # Mililitre
         df['item_q'] = df['weight'].str.extract(r'(.+x)') # Item Quantity
+        df['oz'] = df['weight'].str.extract(r'(\d+oz)') # Oz
 
         # Column cleaning
         df['grams'] = df['grams'].str.strip('gk')
@@ -84,16 +85,21 @@ class DataCleaning:
         df['item_q'].fillna(0, inplace=True)
         df['item_q'] = df['item_q'].astype(int)
 
+        df['oz'] = df['oz'].str.strip('oz')
+        df['oz'].fillna(0, inplace=True)
+        df['oz'] = df['oz'].astype(int)
+
         df['product_price'] = df['product_price'].str.strip('£').astype(float)
 
         # Calculations
         df['grams_in_kg'] = df['grams'] / 1000
         df['ml_in_kg'] = df['mililitre'] / 1000
         df['x_grams'] = df['item_q'] * df['grams'] / 1000
+        df['oz_kg'] = df['oz'] * 0.0283495
 
         # Final columns
-        df['in_kgs'] = df['grams_in_kg'] + df['ml_in_kg'] + df['x_grams'] + df['kilos'].astype(float)
-        df['in_kgs'] = df['in_kgs'].round(1)
+        df['in_kgs'] = df['grams_in_kg'] + df['ml_in_kg'] + df['x_grams'] + df['kilos'].astype(float) + df['oz_kg']
+        df['in_kgs'] = df['in_kgs']
         df1 = df[['product_name', 'product_price', 'category', 'EAN', 'date_added', 'uuid', 'removed', 'product_code', 'weight', 'in_kgs']]
         df1['date_added'] = pd.to_datetime(df1['date_added'])
         df1['still_avaliable'] = np.where(df['removed'] == 'Still_avaliable', True, False)

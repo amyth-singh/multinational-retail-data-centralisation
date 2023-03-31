@@ -158,4 +158,4 @@ upload_orders_data = databaseconnector.upload_to_db_orders_data(my_engine, clean
 upload_date_times_data = databaseconnector.upload_to_db_date_times(my_engine, clean_date_times)
 
 # Workspace
-upload_stores_data
+#upload_products_data
